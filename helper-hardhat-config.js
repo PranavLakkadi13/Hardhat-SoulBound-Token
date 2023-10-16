@@ -1,3 +1,5 @@
-const developmentChain = ["localhost","hardhat"];
+const developmentChains = ["hardhat", "localhost"];
 
-module.exports = {developmentChain};
+module.exports = {
+  developmentChains,
+};
