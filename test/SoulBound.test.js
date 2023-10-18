@@ -55,7 +55,23 @@ const { developmentChains } = require("../helper-hardhat-config");
         })
     });
 
-    // describe("Burn function", () => {
-    //     it()
-    // })
+    describe("Burn function", () => {
+        it("The token burn should fail, if the address buring the token inst the owner of the token", async () => {
+            await Contract.safeMint(accounts[1].address, "Hello");
+            await expect(Contract.burn("0")).to.be.revertedWith("Only owner of the token can burn it");
+        });
+        it("It should burn only if the owner of the token call it", async () => {
+            await Contract.safeMint(accounts[1].address, "Hello");
+            Contract.connect(accounts[1]).burn("0");
+        });
+        it("Should fail if the token being burn is invalid token ID", async () => {
+            await Contract.safeMint(accounts[1].address, "Hello");
+            await expect(Contract.burn("1")).to.be.revertedWith("ERC721: invalid token ID");
+        });
+        it("should delete the mapping of the token URI", async () => {
+            await Contract.safeMint(accounts[1].address, "Hello");
+            const x = await Contract.getTokenCount();
+            console.log(x.toString);
+        })
+    })
 });
