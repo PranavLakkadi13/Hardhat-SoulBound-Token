@@ -68,10 +68,17 @@ const { developmentChains } = require("../helper-hardhat-config");
             await Contract.safeMint(accounts[1].address, "Hello");
             await expect(Contract.burn("1")).to.be.revertedWith("ERC721: invalid token ID");
         });
-        it("should delete the mapping of the token URI", async () => {
+        it("Even after the token has been burned the token count should remain same", async () => {
+            const y = await Contract.getTokenCount();
             await Contract.safeMint(accounts[1].address, "Hello");
+            await Contract.connect(accounts[1]).burn("0");
             const x = await Contract.getTokenCount();
-            console.log(x.toString);
+            assert(y < x)
+        });
+        it("Should delete the mapping", async () => {
+            await Contract.safeMint(accounts[1].address, "Hello");
+            await Contract.connect(accounts[1]).burn("0");
+            await expect(Contract.tokenURI(0)).to.be.revertedWith("ERC721: invalid token ID");
         })
     })
 });
