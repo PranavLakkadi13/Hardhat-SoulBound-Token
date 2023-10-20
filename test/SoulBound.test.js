@@ -79,6 +79,34 @@ const { developmentChains } = require("../helper-hardhat-config");
             await Contract.safeMint(accounts[1].address, "Hello");
             await Contract.connect(accounts[1]).burn("0");
             await expect(Contract.tokenURI(0)).to.be.revertedWith("ERC721: invalid token ID");
+        });
+        it("Should emit Events", async () => {
+            await Contract.safeMint(accounts[1].address, "Hello");
+            await expect(Contract.connect(accounts[1]).burn(0)).to.emit(Contract,"Transfer").withArgs(accounts[1].address,ethers.constants.AddressZero,0);
+            await Contract.safeMint(accounts[1].address, "Hello");
+            await expect(Contract.connect(accounts[1]).burn(1)).to.emit(Contract,"Revoke").withArgs(ethers.constants.AddressZero,1)
+        });
+    });
+
+    describe("Checks the revoke function", () => {
+        it("Should fails if someone apart from the deployer call the function", async () => {
+            await Contract.safeMint(accounts[1].address, "Hello");
+            await expect(Contract.connect(accounts[1]).revoke(0)).to.be.revertedWith("Ownable: caller is not the owner");
+        });
+        it("Only the owner can call the function", async () => {
+            await Contract.safeMint(accounts[1].address, "Hello");
+            await Contract.revoke(0)
+            await expect(Contract.tokenURI(0)).to.be.revertedWith("ERC721: invalid token ID");
+        });
+    })
+
+    describe("Checks the Approval, transferFrom, Burn functions", () => {
+        beforeEach(async () => {
+            await Contract.safeMint(accounts[1].address, "Hello");
+            await Contract.safeMint(accounts[2].address, "Hello");
+        });
+        it("check the approve function", async () => {
+
         })
     })
 });
