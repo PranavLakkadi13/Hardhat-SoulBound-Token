@@ -41,7 +41,7 @@ const { developmentChains } = require("../helper-hardhat-config");
             assert.equal(ownerOf.toString(),accounts[1].address )
         });
         it("should revert if the minting address is address 0", async () => {
-            await expect(Contract.safeMint(ethers.constants.AddressZero, "Hello")).to.be.revertedWith("ERC721: mint to the zero address");
+            await expect(Contract.safeMint(ethers.constants.AddressZero, "Hello")).to.be.revertedWith("ERC721: address zero is not a valid owner");
         });
         it("Should update the token URIs Mapping", async () => {
             await Contract.safeMint(accounts[1].address, "Hello");
@@ -51,7 +51,11 @@ const { developmentChains } = require("../helper-hardhat-config");
         it("Emits an Event", async () => {
             await expect(Contract.safeMint(accounts[1].address, "Hello")).to.emit(Contract,"Transfer").withArgs(ethers.constants.AddressZero,accounts[1].address,0);
             // The below event test will result in the updated tokencounter to 1
-            await expect(Contract.safeMint(accounts[1].address, "Hello123")).to.emit(Contract,"Attest").withArgs(accounts[1].address,1);
+            await expect(Contract.safeMint(accounts[2].address, "Hello123")).to.emit(Contract,"Attest").withArgs(accounts[2].address,1);
+        });
+        it("Should revert if i have already minted tokens ", async () => {
+            await Contract.safeMint(accounts[1].address, "Hello");
+            await expect(Contract.safeMint(accounts[1].address, "Hello")).to.be.revertedWith("SoulBoundToken__OnlyOneTokenCanBeMinted")
         })
     });
 
@@ -98,15 +102,32 @@ const { developmentChains } = require("../helper-hardhat-config");
             await Contract.revoke(0)
             await expect(Contract.tokenURI(0)).to.be.revertedWith("ERC721: invalid token ID");
         });
+        it("Shpould succesfull revoke ", async () => {
+            await Contract.safeMint(accounts[1].address, "Hello");
+            await Contract.revoke(0)
+            const x = await Contract.balanceOf(accounts[1].address);
+            assert.equal(x.toString(),"0");
+        })
     })
 
     describe("Checks the Approval, transferFrom, Burn functions", () => {
         beforeEach(async () => {
             await Contract.safeMint(accounts[1].address, "Hello");
             await Contract.safeMint(accounts[2].address, "Hello");
+            await Contract.connect(accounts[1]).approve(accounts[0].address,"0");
+            await Contract.connect(accounts[2]).approve(accounts[0].address,"1");
         });
-        it("check the approve function", async () => {
-
-        })
+        it("fails if the approver tries to burn the token", async () => {
+            await expect(Contract.burn("0")).to.be.revertedWith("Only owner of the token can burn it");
+        });
+        it("Should if the approved tries to transfer token to address(0)", async () => {
+            await expect(Contract.transferFrom(accounts[1].address,ethers.constants.AddressZero,"0")).to.be.revertedWith("ERC721: transfer to the zero address");
+        });
+        it("should revert is the token is being transfered to someother account", async () => {
+            await expect(Contract.transferFrom(accounts[1].address,accounts[0].address,"0")).to.be.revertedWith("Not allowed to transfer token");
+        });
+        it("should revert is the token is being transfered to someother account", async () => {
+            await expect(Contract.safeTransferFrom(accounts[1].address,accounts[0].address,"0")).to.be.revertedWith("Not allowed to transfer token");
+        });
     })
 });
