@@ -12,8 +12,6 @@ const { developmentChains } = require("../helper-hardhat-config");
       deployer = (await getNamedAccounts()).deployer;
 
       await deployments.fixture(["SoulBound"]);
-
-    //   await deployments.get("SoulBoundToken");
       
       Contract = await ethers.getContract('SoulBoundToken');
       accounts = await ethers.getSigners();
@@ -50,7 +48,7 @@ const { developmentChains } = require("../helper-hardhat-config");
         });
         it("Emits an Event", async () => {
             await expect(Contract.safeMint(accounts[1].address, "Hello")).to.emit(Contract,"Transfer").withArgs(ethers.constants.AddressZero,accounts[1].address,0);
-            // The below event test will result in the updated tokencounter to 1
+            // The below event test will result in the updated tokencounter to 1 since i am minting twice
             await expect(Contract.safeMint(accounts[2].address, "Hello123")).to.emit(Contract,"Attest").withArgs(accounts[2].address,1);
         });
         it("Should revert if i have already minted tokens ", async () => {
@@ -126,8 +124,31 @@ const { developmentChains } = require("../helper-hardhat-config");
         it("should revert is the token is being transfered to someother account", async () => {
             await expect(Contract.transferFrom(accounts[1].address,accounts[0].address,"0")).to.be.revertedWith("Not allowed to transfer token");
         });
-        it("should revert is the token is being transfered to someother account", async () => {
-            await expect(Contract.safeTransferFrom(accounts[1].address,accounts[0].address,"0")).to.be.revertedWith("Not allowed to transfer token");
+        it("should revert is the token is being transfered to someother account using safeTransferFrom", async () => {
+            await expect(Contract["safeTransferFrom(address,address,uint256)"](accounts[1].address, accounts[0].address, "0"))
+            .to.be.revertedWith("Not allowed to transfer token");
+            await expect(Contract.connect(accounts[1])["safeTransferFrom(address,address,uint256,bytes)"](accounts[1].address, accounts[0].address, "0", "0x00"))
+            .to.be.revertedWith("Not allowed to transfer token");
         });
+        it("should revert is the token is being transfered to someother account", async () => {
+            await expect(Contract.connect(accounts[1]).transferFrom(accounts[1].address,accounts[0].address,"0")).to.be.revertedWith("Not allowed to transfer token");
+        });
+    });
+
+    describe("checks the other functions ", () => {
+        beforeEach(async () => {
+            await Contract.safeMint(accounts[1].address, "Hello");
+            await Contract.safeMint(accounts[2].address, "Hello");
+            await Contract.connect(accounts[1]).approve(accounts[0].address,"0");
+            await Contract.connect(accounts[2]).approve(accounts[0].address,"1");
+        });
+        it("checks the approved token mapping function", async () => {
+            const x = await Contract._tokenIdCounter();
+            assert.equal(x.toString(),"2");
+        });
+        it("checks the get approved function", async () => {
+            const x = await Contract.getApproved("0");
+            assert.equal(x,accounts[0].address)
+        })
     })
 });
