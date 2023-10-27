@@ -21,10 +21,9 @@ contract SoulBoundToken is ERC721, ERC721URIStorage, Ownable {
     constructor() ERC721("SoulTokens", "SOULS") {}
 
     function safeMint(address to, string memory uri) public onlyOwner {
-        if (balanceOf(to) == 1) {
+        if (balanceOf(to) >= 1) {
             revert SoulBoundToken__OnlyOneTokenCanBeMinted();
         }
-
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
